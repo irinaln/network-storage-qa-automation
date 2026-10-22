@@ -1,0 +1,28 @@
+name: API and TCP tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: docker compose up -d --build
+      - run: |
+          python - <<'PY'
+          import time, httpx
+          for _ in range(30):
+              try:
+                  if httpx.get('http://127.0.0.1:8000/health', timeout=2).status_code == 200:
+                      break
+              except httpx.HTTPError:
+                  pass
+              time.sleep(1)
+          else:
+              raise SystemExit('Service did not become ready')
+          PY
+      - run: pytest -v
+      - if: always()
+        run: docker compose logs && docker compose down
