@@ -1,6 +1,7 @@
 import os
 import socket
 import uuid
+import pytest
 
 import httpx
 
@@ -34,3 +35,11 @@ def test_write_and_read_round_trip():
 def test_missing_item_returns_404():
     response = httpx.get(f'{BASE_URL}/items/{uuid.uuid4().hex}', timeout=5)
     assert response.status_code == 404
+
+
+def test_connection_refused_on_closed_port():
+    with pytest.raises(ConnectionRefusedError):
+        socket.create_connection(
+            ("127.0.0.1", 9999),
+            timeout=3
+        )
